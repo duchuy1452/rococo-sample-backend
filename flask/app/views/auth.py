@@ -62,7 +62,9 @@ class Login(Resource):
         person_service = PersonService(config)
         person = person_service.get_person_by_email_address(email_address=parsed_body['email'])
 
-        return get_success_response(person=person.as_dict(), access_token=access_token, expiry=expiry)
+        person_dict = person.as_dict()
+        person_dict['email'] = parsed_body['email']
+        return get_success_response(person=person_dict, access_token=access_token, expiry=expiry)
 
 
 @auth_api.route('/forgot_password', doc=dict(description="Send reset password link"))
