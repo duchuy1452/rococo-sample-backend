@@ -26,9 +26,15 @@ class TodoList(Resource):
             else:
                 todos = todo_service.get_todos_by_person_id(entity_id)
                 
-            return TodoHelper.format_todos_response(todos)
+            return {
+                'success': True,
+                'data': TodoHelper.format_todos_response(todos)
+            }, 200
         except Exception as e:
-            return {'error': str(e)}, 500
+            return {
+                'success': False,
+                'message': str(e)
+            }, 200
 
     @login_required()
     def post(self, person):
@@ -38,7 +44,10 @@ class TodoList(Resource):
         # Validate data
         error = TodoHelper.validate_todo_data(data)
         if error:
-            return {'error': error}, 400
+            return {
+                'success': False,
+                'message': error
+            }, 200
             
         # Parse due date
         due_date = TodoHelper.parse_todo_date(data.get('due_date'))
@@ -58,9 +67,15 @@ class TodoList(Resource):
         todo_service = TodoService(config)
         try:
             saved_todo = todo_service.create_todo(todo)
-            return TodoHelper.format_todo_response(saved_todo), 201
+            return {
+                'success': True,
+                'data': TodoHelper.format_todo_response(saved_todo)
+            }, 200
         except Exception as e:
-            return {'error': str(e)}, 500
+            return {
+                'success': False,
+                'message': str(e)
+            }, 200
 
 @todo_api.route('/<string:todo_id>')
 class TodoItem(Resource):
@@ -74,7 +89,13 @@ class TodoItem(Resource):
         try:
             # Get existing todo
             todo = todo_service.get_todo_by_id(todo_id, person_id)
-            
+            current_version = data.get('version')
+            if current_version != todo.version:
+                return {
+                    'success': False,
+                    'message': 'Todo has been modified by another request'
+                }, 200
+
             # Update fields if provided
             if 'title' in data:
                 todo.title = data['title']
@@ -86,20 +107,31 @@ class TodoItem(Resource):
                 todo.due_date = TodoHelper.parse_todo_date(data['due_date'])
 
             # Update version
-            version = todo.version
             todo.previous_version = todo.version
             todo.version = str(uuid.uuid4().hex)
 
             # Save updates
-            updated_todo = todo_service.update_todo(todo, person_id, version)
-            return TodoHelper.format_todo_response(updated_todo)
+            updated_todo = todo_service.update_todo(todo, person_id)
+            return {
+                'success': True,
+                'data': TodoHelper.format_todo_response(updated_todo)
+            }, 200
 
         except TodoNotFoundError:
-            return {'error': 'Todo not found'}, 404
+            return {
+                'success': False,
+                'message': 'Todo not found'
+            }, 200
         except UnauthorizedError as e:
-            return {'error': str(e)}, 403
+            return {
+                'success': False,
+                'message': str(e)
+            }, 200
         except Exception as e:
-            return {'error': str(e)}, 500
+            return {
+                'success': False,
+                'message': str(e)
+            }, 200
 
     @login_required()
     def delete(self, person, todo_id):
@@ -108,13 +140,25 @@ class TodoItem(Resource):
         person_id = person.entity_id
         try:
             todo_service.delete_todo(todo_id, person_id)
-            return '', 204
+            return {
+                'success': True,
+                'message': 'Todo deleted successfully'
+            }, 200
         except TodoNotFoundError:
-            return {'error': 'Todo not found'}, 404
+            return {
+                'success': False,
+                'message': 'Todo not found'
+            }, 200
         except UnauthorizedError as e:
-            return {'error': str(e)}, 403
+            return {
+                'success': False,
+                'message': str(e)
+            }, 200
         except Exception as e:
-            return {'error': str(e)}, 500
+            return {
+                'success': False,
+                'message': str(e)
+            }, 200
 
 @todo_api.route('/<string:todo_id>/complete')
 class TodoComplete(Resource):
@@ -128,18 +172,28 @@ class TodoComplete(Resource):
         
         todo_service = TodoService(config)
         try:
-            todo = todo_service.update_todo_status(todo_id, person_id, is_completed, version)
+            updated_todo = todo_service.update_todo_status(todo_id, person_id, is_completed, version)
             return {
-                'id': todo.entity_id,
-                'is_completed': todo.is_completed,
-                'completed_at': todo.completed_at.isoformat() if todo.completed_at else None,
-                'version': todo.version
-            }
+                'success': True,
+                'data': TodoHelper.format_todo_response(updated_todo)
+            }, 200
         except TodoNotFoundError:
-            return {'error': 'Todo not found'}, 404
+            return {
+                'success': False,
+                'message': 'Todo not found'
+            }, 200
         except UnauthorizedError as e:
-            return {'error': str(e)}, 403
+            return {
+                'success': False,
+                'message': str(e)
+            }, 200
         except ConcurrentModificationError as e:
-            return {'error': str(e)}, 409
+            return {
+                'success': False,
+                'message': str(e)
+            }, 200
         except Exception as e:
-            return {'error': str(e)}, 500
+            return {
+                'success': False,
+                'message': str(e)
+            }, 200
