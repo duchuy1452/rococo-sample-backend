@@ -123,11 +123,8 @@ class TodoComplete(Resource):
         """Mark a todo as complete or incomplete"""
         data = request.get_json()
         is_completed = data.get('is_completed', True)
-        version = data.get('version')
         person_id = person.entity_id
-        
-        if not version:
-            return {'error': 'Version is required'}, 400
+        version = data.get('version')
         
         todo_service = TodoService(config)
         try:

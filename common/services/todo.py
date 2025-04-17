@@ -24,12 +24,9 @@ class TodoService:
     def create_todo(self, todo: Todo) -> Todo:
         return self.todo_repo.save(todo)
 
-    def update_todo(self, todo: Todo, person_id: str, version: str) -> Todo:
+    def update_todo(self, todo: Todo, person_id: str) -> Todo:
         if todo.person_id != person_id:
             raise UnauthorizedError("You don't have permission to update this todo")
-
-        if todo.version != version:
-            raise ConcurrentModificationError("Todo has been modified by another request")
 
         return self.todo_repo.save(todo)
 
