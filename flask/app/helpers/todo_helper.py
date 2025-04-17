@@ -16,9 +16,14 @@ class TodoHelper:
         if not date_str:
             return None
         try:
-            return datetime.fromisoformat(date_str)
+            # Try parsing with format YYYY/MM/DD
+            return datetime.strptime(date_str, '%Y/%m/%d')
         except ValueError:
-            return None
+            try:
+                # Fallback to ISO format
+                return datetime.fromisoformat(date_str)
+            except ValueError:
+                return None
 
     @staticmethod
     def format_todo_response(todo: Todo) -> Dict:
@@ -31,6 +36,7 @@ class TodoHelper:
             'completed_at': todo.completed_at.isoformat() if todo.completed_at else None,
             'due_date': todo.due_date.isoformat() if todo.due_date else None,
             'priority': todo.priority,
+            'version': todo.version
         }
 
     @staticmethod
