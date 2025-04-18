@@ -5,8 +5,6 @@ from typing import Optional
 
 @dataclass
 class Todo(VersionedModel):
-    __tablename__ = 'todo'
-
     person_id: str = field(default='')
     title: str = field(default='')
     priority: int = field(default=0) # 0 = low, 1 = medium, 2 = high
